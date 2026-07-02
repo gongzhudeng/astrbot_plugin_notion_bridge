@@ -402,6 +402,8 @@ class NotionSyncPlugin(Star):
     # ── 同步 & 缓存 ──
 
     async def sync_all(self) -> dict:
+        if self._http.is_closed:
+            return {"ok": False, "error": "client closed"}
         async with self._sync_lock:
             logger.info("🔄 开始同步 Notion 设定集...")
             if not self.notion_token:
