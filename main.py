@@ -533,20 +533,20 @@ f"【设定集信息】\n\n最后同步时间: {data.get('last_sync', '未知')}
 
     async def _sync_to_legacy_kb(self, kb_plugin) -> dict:
         """Write Notion cache into the legacy knowledge-base plugin's VectorDB."""
-        import importlib
-
         vector_db = getattr(kb_plugin, "vector_db", None)
         text_splitter = getattr(kb_plugin, "text_splitter", None)
         if vector_db is None or text_splitter is None:
             return {"ok": False, "error": "legacy KB plugin not fully initialized"}
 
-        try:
-            mod = importlib.import_module(
-                "astrbot_plugin_knowledge_base.vector_store.base"
-            )
-            Document = mod.Document
-        except Exception as e:
-            return {"ok": False, "error": f"cannot import Document: {e}"}
+        import sys
+
+        Document = None
+        for key, mod in sys.modules.items():
+            if key.endswith("astrbot_plugin_knowledge_base.vector_store.base"):
+                Document = getattr(mod, "Document", None)
+                break
+        if Document is None:
+            return {"ok": False, "error": "cannot find Document class from astrbot_plugin_knowledge_base"}
 
         with open(self.cache_file, "r", encoding="utf-8") as f:
             data = json.load(f)
