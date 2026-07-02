@@ -92,7 +92,9 @@ class NotionSyncPlugin(Star):
         self._register_webhook_api()
 
         if self.notion_token and self.root_page_id:
-            asyncio.create_task(self._auto_sync_loop())
+            self._sync_task = asyncio.create_task(self._auto_sync_loop())
+        else:
+            self._sync_task = None
 
     # ── Webhook API 端点 ──
 
@@ -1738,5 +1740,11 @@ f"🆔 `{bot['id']}`\n"
             return
 
     async def terminate(self):
+        if self._sync_task and not self._sync_task.done():
+            self._sync_task.cancel()
+            try:
+                await self._sync_task
+            except asyncio.CancelledError:
+                pass
         await self._http.aclose()
         logger.info("Notion Bridge 插件 - 文档管理增强版已卸载")
